@@ -25,7 +25,7 @@ class Scraper:
         self.driver.implicitly_wait(60)
         self.driver.get(self.url)
         len_page = self.driver.execute_script("return document.body.scrollHeight;")
-        # ids = []
+        ids = []
         final_list = dict()
 
         def process_string(input_string):
@@ -91,6 +91,7 @@ class Scraper:
             if not get_core_data(n, id_list):
                 return False
             get_linkedIn(n)
+            get_mail(n, id_list)
             return True
 
         @debug
@@ -100,6 +101,12 @@ class Scraper:
             time.sleep(10)
             scroll(n)
             time.sleep(3)
+
+        def click_screen(position):
+            action = webdriver.common.action_chains.ActionChains(self.driver)
+            action.move_to_element_with_offset(position, 20, 20)
+            action.click()
+            action.perform()
 
         def scroll(n):
             self.driver.execute_script("window.scrollTo(0," + str(n * 4) + ")")
@@ -136,9 +143,6 @@ class Scraper:
                     return False
                 else:
                     refresh_and_update(n)
-                    # simple_refresh(n)
-                    # flag = get_core_data(n, id_list, recursion_limit - 1, flag=True)
-                    # return flag
 
         def get_linkedIn(n):
             try:
@@ -151,8 +155,7 @@ class Scraper:
             except (NoSuchElementException, IndexError) as e:
                 ids[i] = ids[i] + "\nLINKEDIN: \nNULL"
 
-        @debug
-        def open_mail(n, the_list, recursion_limit=2, flag=False):
+        def open_mail(n, the_list, recursion_limit=2):
             try:
                 time.sleep(3)
                 # click email button
@@ -175,18 +178,16 @@ class Scraper:
                     print("recursive limit reached, skipping email...")
                     return False
                 else:
-                    if flag:
-                        return True
                     time.sleep(2)
-                    # simple_refresh(n)
-                    # flag = open_mail(n, the_list, recursion_limit - 1)
                     refresh_and_update(n, the_list)
-                    if not flag:
-                        return False
-                    else:
+                    if open_mail(n, the_list, recursion_limit - 1):
                         return True
+                    return False
+
             except ElementClickInterceptedException:
-                simple_refresh(n)
+
+                click_screen(mail_button)
+
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
                                                                 "2]/div/div[" + str(
                     n + 1) + "]/div/div/div/div/div/div["
@@ -195,7 +196,6 @@ class Scraper:
                 mail_button.click()
                 return True
 
-        @debug
         def close_mail(n):
 
             try:
@@ -208,7 +208,7 @@ class Scraper:
                 return True
 
             except (ElementClickInterceptedException, StaleElementReferenceException, NoSuchElementException):
-                simple_refresh(n)
+                click_screen(close_mail_button)
                 return True
 
         def copy_email_address(n, the_list):
