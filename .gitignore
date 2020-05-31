@@ -1,3 +1,5 @@
 __pycache__/
 .idea/
 layoff_list.txt
+.DS_Store
+.idea/workspace.xml
