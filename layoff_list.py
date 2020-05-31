@@ -3,8 +3,11 @@ from selenium.common.exceptions import NoSuchElementException, ElementClickInter
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
-from decorators import debug, timer
+from decorators import timer
 import time
+import json
+import re
+from string import digits
 
 
 class Scraper:
@@ -23,8 +26,54 @@ class Scraper:
         self.driver.get(self.url)
         len_page = self.driver.execute_script("return document.body.scrollHeight;")
         ids = []
+        final_list = dict()
 
-        def refresh(n, id_list):
+        def process_string(input_string):
+
+            final_list["Name"] = input_string[0]
+
+            # todo condense, iterate through list of option and sub variables
+            try:
+                if input_string[input_string.index('PRIOR COMPANY') + 1] != 'LOCATION':
+                    final_list['company'] = re.sub(r'\d+', '', input_string[input_string.index('PRIOR COMPANY') + 1])
+            except (ValueError, IndexError):
+                final_list['company'] = 'NULL'
+
+            try:
+                if input_string[input_string.index('LOCATION') + 1] != 'PRIOR DEPARTMENT':
+                    final_list['location'] = re.sub(r'\d+', '', input_string[input_string.index('LOCATION') + 1])
+            except (ValueError, IndexError):
+                final_list['location'] = 'NULL'
+
+            try:
+                if input_string[input_string.index('PRIOR DEPARTMENT') + 1] != 'PRIOR JOB TITLE':
+                    final_list['department'] = re.sub(r'\d+', '', input_string[input_string.index('PRIOR DEPARTMENT') + 1])
+            except (ValueError, IndexError):
+                final_list['department'] = 'NULL'
+
+            try:
+                if input_string[input_string.index('PRIOR JOB TITLE') + 1] != 'SKILLS':
+                    final_list['skills'] = re.sub(r'\d+', '', input_string[input_string.index('PRIOR JOB TITLE') + 1])
+            except (ValueError, IndexError):
+                final_list['skills'] = 'NULL'
+
+            try:
+                if input_string[input_string.index('LINKEDIN') + 1] != 'NULL':
+                    final_list['linkedIn'] = input_string[input_string.index('LINKEDIN') + 1]
+            except (ValueError, IndexError):
+                final_list['linkedIn'] = 'NULL'
+
+            try:
+                if input_string[input_string.index('EMAIL') + 1] != 'NULL':
+                    final_list['email'] = input_string[input_string.index('EMAIL') + 1]
+            except (ValueError, IndexError):
+                final_list['email'] = 'NULL'
+
+            final_list['user_id'] = input_string[input_string.index('UID') + 1]
+
+            return final_list
+
+        def refresh_and_update(n, id_list):
             print("Reloading...")
             self.driver.refresh()
             time.sleep(10)
@@ -35,6 +84,11 @@ class Scraper:
             get_linkedIn(n)
             return True
 
+        def simple_refresh(n):
+            self.driver.refresh()
+            time.sleep(10)
+            scroll(n)
+
         def scroll(n):
             self.driver.execute_script("window.scrollTo(0," + str(n * 4) + ")")
             return n * 4
@@ -42,10 +96,10 @@ class Scraper:
         def check_mail_or_linked(variable, n):
             try:
                 if "linked" in variable[0].get_attribute('href'):
-                    ids[n] = ids[n] + "\nLINKEDIN \n" + variable[0].get_attribute('href')
+                    ids[n] = ids[n] + "\nLINKEDIN\n" + variable[0].get_attribute('href')
                     return True
                 elif "@" in variable[0].get_attribute('href'):
-                    ids[n] = ids[n] + "\nEMAIL: \n" + variable[0].get_attribute('href')[7:]
+                    ids[n] = ids[n] + "\nEMAIL\n" + variable[0].get_attribute('href')[7:]
                     return True
                 else:
                     return False
@@ -55,20 +109,22 @@ class Scraper:
         def get_core_data(n, id_list, recursion_limit=2):
             # todo Relocation preference, string handling
             try:
-                id_list.append(self.driver.find_elements_by_xpath(
+
+                user_info = self.driver.find_elements_by_xpath(
                     "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0].text + \
-                               "\nUID:\n" + str(n))
+                            "\nUID\n" + str(n)
+
+                id_list.append(user_info)
+
                 return True
             except IndexError:
                 time.sleep(3)
-                self.driver.refresh()
-                time.sleep(10)
-                scroll(n)
+                simple_refresh(n)
                 print("Trying to fetch core data again...")
                 if recursion_limit == 0:
                     return False
                 else:
-                    get_core_data(n, id_list, recursion_limit-1)
+                    get_core_data(n, id_list, recursion_limit - 1)
 
         def get_linkedIn(n):
             # todo error handling for when no email and no linkedin (unpredictable behavior); continue, when refresh
@@ -83,9 +139,9 @@ class Scraper:
             except (NoSuchElementException, IndexError) as e:
                 ids[i] = ids[i] + "\nLINKEDIN: \nNULL"
 
-        def open_mail(n, the_list):
+        def open_mail(n, the_list, recursion_limit=3):
             try:
-                time.sleep(1)
+                time.sleep(3)
                 # click email button
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
                                                                 "2]/div/div[ " + str(
@@ -93,14 +149,19 @@ class Scraper:
                              "2]/div[2]/div/div/div["
                              "2]/button")
                 mail_button.click()
-                # todo see if the right button has been clicked save time searching for close bttn
-                # id mail_button has something from clipboard?? then continue
+                time.sleep(4)
+                if not copy_email_address(n, the_list):
+                    return False
+                else:
+                    return True
             except (
                     ElementClickInterceptedException, ElementNotInteractableException,
-                    StaleElementReferenceException):
-                refresh(n, the_list)
-                print("Trying to open mail again...")
-                open_mail(n, the_list)
+                    StaleElementReferenceException, NoSuchElementException) as e:
+                print("Trying to open mail again... " + str(e))
+                refresh_and_update(n, the_list)
+                if recursion_limit == 0:
+                    return False
+                open_mail(n, the_list, recursion_limit - 1)
 
         def close_mail(n, the_list):
 
@@ -113,7 +174,7 @@ class Scraper:
                 return True
 
             except ElementClickInterceptedException:
-                refresh(n, the_list)
+                simple_refresh()
             except (StaleElementReferenceException, NoSuchElementException):
                 pass
 
@@ -125,6 +186,7 @@ class Scraper:
                 if not check_mail_or_linked(email, n):
                     return False
 
+                return True
             except (NoSuchElementException, IndexError):
                 the_list[n] = the_list[n] + "\nEMAIL: \nNULL"
                 return True
@@ -132,9 +194,7 @@ class Scraper:
         @timer
         def get_mail(n, the_list):
 
-            open_mail(n, the_list)
-
-            if not copy_email_address(n, the_list):
+            if not open_mail(n, the_list):
                 return False
             elif not close_mail(n, the_list):
                 return False
@@ -155,10 +215,15 @@ class Scraper:
                 get_linkedIn(i)
 
                 if not get_mail(i, ids):
+                    ids[i] = ids[i] + "\nEMAIL: \nNULL"
                     print("Skipping this email data point. \nCOUNT: " + str(i + 1) + "\n" + ids[i] + "\n")
                     continue
 
-                print("COUNT: " + str(i + 1) + "\n" + ids[i] + "\n")
-                file.write(ids[i] + "\n")
+                process_string(ids[i].split('\n'))
+                file.write(json.dumps(final_list))
+
+                print("COUNT: " + str(i + 1) + "\n" + str(final_list) + "\n")
 
         self.driver.close()
+
+# todo get rid of unnecessary id_list
