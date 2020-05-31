@@ -1,0 +1,154 @@
+Zach G.
+PRIOR COMPANY
+LOCATION
+PRIOR DEPARTMENT
+PRIOR JOB TITLE
+SKILLS
+UID:
+0
+LINKEDIN 
+http://www.linkedin.com/in/zachg
+EMAIL: 
+zachg27@gmail.com
+George A.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Chicago 18
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Enterprise Solutions Engineer
+SKILLS
+Customer Service 58
+Leadership 92 Management 61 Microsoft Excel 101 Microsoft Office 144 Microsoft Powerpoint 30 Microsoft Word 75 Sales 14 Strategic Planning 20 Team Building 5
+UID:
+2
+LINKEDIN 
+https://www.linkedin.com/in/george-apostolopoulos-844b87a2
+EMAIL: 
+gapostolopoulos87@gmail.com
+Zach M.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Brighton 1
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Software Engineer II 17
+SKILLS
+Angularjs 53
+C 134 C# 76 Css 148 Git 141 Html 197 Java 262 Javascript 260 Node.Js 79 Programming 89 Ruby 54 Scala 15 Sql 208
+UID:
+3
+LINKEDIN 
+https://www.linkedin.com/in/zachary-milrod-847b51a5
+EMAIL: 
+zmilrod@gmail.com
+Aaron C.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Boston 60
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+R&D Enablement Coordinator
+SKILLS
+Skills include enablement
+account management team building and training
+UID:
+4
+LINKEDIN 
+https://www.linkedin.com/in/aaron-culp-b6616892/
+EMAIL: 
+aaron.culp21@yahoo.com
+Jaedyn L.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Boston 60
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Software Engineer 180
+SKILLS
+C++ 166
+Customer Service 58 Html 197 Java 262 Matlab 65 Microsoft Office 144 Optical Character Recognition Photoshop 38 Python 232 Teamwork 60 Web Scraping
+UID:
+5
+LINKEDIN 
+https://www.linkedin.com/in/jaedynlee/
+EMAIL: 
+jaedyn.e.lee@gmail.com
+Steven B.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Orlando 3
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Software Engineer II 17
+SKILLS
+3d Game Engines
+Ableton Live Algorithms 48 Audio Engineering C# 76 C++ 166 Composition Customer Service 58 Facebook 12 Fl Studio Game Programming Html 197 Java 262 Microsoft Powerpoint 30 Music 3 Music Theory And Composition Os X 11 Piano Powerpoint 55 Programming 89 Software Development 161 Software Engineering 79 Sound Design Unity 3d Unity3d 7 Video Games 4 Visual Basic 8 Visual Studio 34 Windows 35 Windows Applications
+UID:
+6
+LINKEDIN 
+https://www.linkedin.com/in/steven-belowsky-58a1b064/
+EMAIL: 
+sbprogressive@gmail.com
+Jordan C.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Boston 60
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Software Engineer II 17
+SKILLS
+Adobe Creative Suite 20
+Angularjs 53 Cms 9 Css 148 Dreamweaver 8 Drupal Flash 8 Front End 18 Front End Development 26 Git 141 Graphic Graphic Design 22 Html 197 Html 5 42 Illustrator 15 Indesign 12 Javascript 260 Jquery 113 Logo Design Mysql 125 Node.Js 79 Photoshop 38 Php 101 React 26 React Native 11 React.Js 69 Redux 24 Responsive Web Design 8 Rightnow Sass 17 Seo 15 Shopify Software Development 161 User Experience 39 User Interface Design 34 Ux Design Ux Development Vue.Js Web Design 34 Web Development 85 Wordpress 36
+UID:
+7
+LINKEDIN 
+https://www.linkedin.com/in/chaseindustries/
+EMAIL: 
+carbon6@gmail.com
+Jonathan R.
+PRIOR COMPANY
+Toast 77
+LOCATION
+Chicago 18
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Mechanical Architect
+SKILLS
+Developing amazing products! Creating mechanical/electro-mechanical products from start to finish
+Design validation Design for manufacturing ProE/Solidworks FMEA Root cause analysis Extensive industry wide contact list of suppliers/manufactures/talented professionals Excited to work collaboratively developing fantastic hardware.
+UID:
+8
+LINKEDIN 
+https://www.linkedin.com/in/jonathan-richard-me
+EMAIL: 
+jonathanrichard.ls1@gmail.com
+Sneha E.
+PRIOR COMPANY
+Toast 77
+PRIOR DEPARTMENT
+Engineering
+PRIOR JOB TITLE
+Senior Software Engineer 41
+SKILLS
+Distributed Systems 42
+Perl 35 Software Design 32 Systems Engineering 4
+UID:
+9
+LINKEDIN 
+https://www.linkedin.com/in/sneha-ekbote/
+EMAIL: 
+ekbote.sneha@gmail.com

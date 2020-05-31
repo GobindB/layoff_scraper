@@ -24,48 +24,54 @@ class Scraper:
         len_page = self.driver.execute_script("return document.body.scrollHeight;")
         ids = []
 
-        @debug
-        @timer
         def refresh(n, id_list):
             print("Reloading...")
             self.driver.refresh()
             time.sleep(10)
             scroll(i)
             id_list.pop()
-            get_core_data(n, id_list)
+            if not get_core_data(n, id_list):
+                return False
             get_linkedIn(n)
+            return True
 
         def scroll(n):
             self.driver.execute_script("window.scrollTo(0," + str(n * 4) + ")")
             return n * 4
 
         def check_mail_or_linked(variable, n):
-            if "linked" in variable[0].get_attribute('href'):
-                ids[n] = ids[n] + "\nLINKEDIN \n" + variable[0].get_attribute('href')
-                return True
-            elif "@" in variable[0].get_attribute('href'):
-                ids[n] = ids[n] + "\nEMAIL: \n" + variable[0].get_attribute('href')[7:]
-                return True
-            else:
+            try:
+                if "linked" in variable[0].get_attribute('href'):
+                    ids[n] = ids[n] + "\nLINKEDIN \n" + variable[0].get_attribute('href')
+                    return True
+                elif "@" in variable[0].get_attribute('href'):
+                    ids[n] = ids[n] + "\nEMAIL: \n" + variable[0].get_attribute('href')[7:]
+                    return True
+                else:
+                    return False
+            except IndexError:
                 return False
 
-        def get_core_data(n, id_list):
+        def get_core_data(n, id_list, recursion_limit=2):
             # todo Relocation preference, string handling
             try:
                 id_list.append(self.driver.find_elements_by_xpath(
                     "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0].text + \
                                "\nUID:\n" + str(n))
+                return True
             except IndexError:
                 time.sleep(3)
                 self.driver.refresh()
                 time.sleep(10)
                 scroll(n)
                 print("Trying to fetch core data again...")
-                get_core_data(n, id_list)
+                if recursion_limit == 0:
+                    return False
+                else:
+                    get_core_data(n, id_list, recursion_limit-1)
 
         def get_linkedIn(n):
-            """todo error handling for when no email and no linkedin (unpredictable behavior); continue, when refresh
-             core data is missed"""
+            # todo error handling for when no email and no linkedin (unpredictable behavior); continue, when refresh
             try:
                 # click email button, copy email
                 linkedIn = self.driver.find_elements_by_xpath(
@@ -96,17 +102,7 @@ class Scraper:
                 print("Trying to open mail again...")
                 open_mail(n, the_list)
 
-        @timer
         def close_mail(n, the_list):
-            try:
-                email = self.driver.find_elements_by_xpath(
-                    "//*[@id='__BVID__" + str(89 + (n * 4)) + "___BV_modal_body_']/a")
-
-                if not check_mail_or_linked(email, n):
-                    return False
-
-            except (NoSuchElementException, IndexError):
-                ids[i] = ids[i] + "\nEMAIL: \nNULL"
 
             try:
                 time.sleep(1)
@@ -121,12 +117,29 @@ class Scraper:
             except (StaleElementReferenceException, NoSuchElementException):
                 pass
 
+        def copy_email_address(n, the_list):
+            try:
+                email = self.driver.find_elements_by_xpath(
+                    "//*[@id='__BVID__" + str(89 + (n * 4)) + "___BV_modal_body_']/a")
+
+                if not check_mail_or_linked(email, n):
+                    return False
+
+            except (NoSuchElementException, IndexError):
+                the_list[n] = the_list[n] + "\nEMAIL: \nNULL"
+                return True
+
         @timer
         def get_mail(n, the_list):
+
             open_mail(n, the_list)
 
-            if not close_mail(n, the_list):
+            if not copy_email_address(n, the_list):
                 return False
+            elif not close_mail(n, the_list):
+                return False
+            else:
+                return True
 
         page_position = 0
         while page_position < len_page:
@@ -134,10 +147,15 @@ class Scraper:
                 page_position = scroll(i)
                 time.sleep(1)
 
-                get_core_data(i, ids)
+                if not get_core_data(i, ids):
+                    print("Skipping this entire data point.")
+                    ids.append("\nNULL\n" + "UID:\n" + str(i))
+                    continue
+
                 get_linkedIn(i)
 
-                if get_mail(i, ids):
+                if not get_mail(i, ids):
+                    print("Skipping this email data point. \nCOUNT: " + str(i + 1) + "\n" + ids[i] + "\n")
                     continue
 
                 print("COUNT: " + str(i + 1) + "\n" + ids[i] + "\n")
