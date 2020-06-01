@@ -109,7 +109,7 @@ class Scraper:
         def scroll(n):
             self.driver.execute_script("window.scrollTo({top:" + str(n * 200) + ",behavior: 'smooth',});")
             return n * 200
-            time.sleep(4)
+            time.sleep(3)
 
         def check_mail_or_linked(variable, n):
             try:
@@ -124,9 +124,13 @@ class Scraper:
             except IndexError:
                 return False
 
-        def get_core_data(n, id_list, recursion_limit=2):
+        def get_core_data(n, id_list):
             # todo Relocation preference
             try:
+
+                click_screen(self.driver.find_elements_by_xpath("//*[@id='app']/div/div/div/div[4]"
+                                                                "/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0])
+
                 data = self.driver.find_elements_by_xpath(
                     "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0].text
 
@@ -169,36 +173,48 @@ class Scraper:
             except (ElementNotInteractableException, StaleElementReferenceException, NoSuchElementException,
                     ElementClickInterceptedException) as e:
 
-                click_screen(mail_button)
+                # todo rewrite poor recursion logic
                 print("Trying to open mail again... " + str(e))
-                if recursion_limit == 0:
-                    print("recursive limit reached, skipping email...")
-                    return False
-                else:
-                    time.sleep(2)
-                    refresh_and_update(n, the_list)
-                    if open_mail(n, the_list, recursion_limit - 1):
-                        return True
-                    return False
-
-        def close_mail(n):
-
-            try:
-                time.sleep(2)
-                close_mail_button = self.driver.find_element_by_xpath(
-                    "//*[@id='__BVID__" + str(89 + (n * 4)) + "___BV_modal_footer_']/button")
-                time.sleep(1)
-                close_mail_button.click()
-                scroll(n)
-                return True
-
-            except (ElementClickInterceptedException, StaleElementReferenceException, NoSuchElementException):
+                scroll(n + 1)
+                click_screen(mail_button)
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
                                                                 "2]/div/div[" + str(n + 1) +
                                                                 "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
                                                                 "2]/button")
-                click_screen(mail_button)
-                return True
+                try:
+                    mail_button.click()
+                except Exception as e:
+                    print("error cant get mail " + e)
+                    return False
+
+                # if recursion_limit == 0:
+                #     print("recursive limit reached, skipping email...")
+                #     return False
+                # else:
+                #     time.sleep(2)
+                #     refresh_and_update(n, the_list)
+                #     if open_mail(n, the_list, recursion_limit - 1):
+                #         return True
+                #     return False
+
+        # def close_mail(n):
+        #
+        #     try:
+        #         time.sleep(2)
+        #         close_mail_button = self.driver.find_element_by_xpath(
+        #             "//*[@id='__BVID__" + str(89 + (n * 4)) + "___BV_modal_footer_']/button")
+        #         time.sleep(1)
+        #         close_mail_button.click()
+        #         scroll(n)
+        #         return True
+        #
+        #     except (ElementClickInterceptedException, StaleElementReferenceException, NoSuchElementException):
+        #         mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
+        #                                                         "2]/div/div[" + str(n + 1) +
+        #                                                         "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
+        #                                                         "2]/button")
+        #         click_screen(mail_button)
+        #         return True
 
         def copy_email_address(n, the_list):
             try:
@@ -206,14 +222,21 @@ class Scraper:
                 email = self.driver.find_elements_by_xpath(
                     "//*[@id='__BVID__" + str(89 + (n * 4)) + "___BV_modal_body_']/a")
 
-                if email == '':
+                print(email[0].get_attribute('href'))
+                if email[0].get_attribute('href') == '':
+                    offset = int(4*(n + .5))
                     email = self.driver.find_elements_by_xpath(
-                        "//*[@id='__BVID__" + str(89 + (4(n + .5))) + "___BV_modal_body_']/a")
+                        "//*[@id='__BVID__" + str(89 + offset) + "___BV_modal_body_']/a")
+
+                if email[0].get_attribute('href') == '':
+                    offset = int(4*(n + .75))
+                    email = self.driver.find_elements_by_xpath(
+                        "//*[@id='__BVID__" + str(89 + offset) + "___BV_modal_body_']/a")
 
                 if not check_mail_or_linked(email, n):
                     return False
-
-                return True
+                else:
+                    return True
             except (NoSuchElementException, IndexError):
                 the_list[n] = the_list[n] + "\nEMAIL: \nNULL"
                 return True
@@ -224,7 +247,7 @@ class Scraper:
             if not open_mail(n, the_list):
                 return False
             else:
-                close_mail(n)
+                # close_mail(n)
                 return True
 
         page_position = 0
