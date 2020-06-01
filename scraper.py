@@ -1,7 +1,7 @@
 from layoff_list import Scraper
 
 Scraper = Scraper()
-Scraper.begin('layoff_list.txt')
+Scraper.begin('layoff_list.csv')
 
 
 
