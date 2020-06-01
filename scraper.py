@@ -2,7 +2,7 @@ from layoff_list import Scraper
 
 __name__ = '__main__'
 Scraper = Scraper()
-Scraper.begin('layoff_list.csv')
+Scraper.begin('layoff_list_operations.csv')
 # try:
 #
 # except Exception as e:

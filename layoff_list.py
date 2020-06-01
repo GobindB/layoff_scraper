@@ -17,7 +17,7 @@ class Scraper:
         chrome_options = Options()
         # chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
-        self.url = "https://list.layoffs.fyi/?Prior%20Department=Engineering"
+        self.url = "https://list.layoffs.fyi/?Location=San%20Francisco%7CSF%20Bay%20Area&Prior%20Department=Operations"
 
     def begin(self, data_file):
 
@@ -86,10 +86,10 @@ class Scraper:
             self.driver.refresh()
             time.sleep(6)
             scroll(n)
-            time.sleep(4)
+            time.sleep(8)
 
         def click_screen(position, n):
-            time.sleep(3)
+            time.sleep(4)
             action = webdriver.common.action_chains.ActionChains(self.driver)
             action.move_to_element_with_offset(position, 20, 20)
             action.click()
@@ -159,11 +159,15 @@ class Scraper:
 
         def open_mail(n, the_list, recursion=0):
             """Clicks mail link; returns true if opened false if not. Retries once if fail first time"""
+            # todo if mail_button has clipboard, return false; speed increase of 30x
             try:
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
                                                                 "2]/div/div[" + str(n + 1) +
                                                                 "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
                                                                 "2]/button")
+                if 'Share' in mail_button.text:
+                    return False
+
                 time.sleep(1)
                 mail_button.click()
 
@@ -176,25 +180,17 @@ class Scraper:
                     ElementClickInterceptedException) as e:
 
                 print("Trying to open mail again... " + str(e))
-                simple_refresh(n)
+                # todo assess redundancy
+                # simple_refresh(n)
                 time.sleep(1)
                 recursion += 1
                 if recursion == 1:
                     print("error cant get mail " + str(e))
                     return False
                 else:
+                    scroll(n)
                     open_mail(n, the_list, flag)
-                # # mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
-                # #                                                 "2]/div/div[" + str(n + 1) +
-                # #                                                 "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
-                # #                                                 "2]/button")
-                # # try:
-                # #     time.sleep(3)
-                # #     mail_button.click()
-                # #     return True
-                # except Exception as e:
-                #     print("error cant get mail " + str(e))
-                #     return False
+                    return True
 
         def copy_email_address(n, the_list):
             try:
@@ -229,7 +225,7 @@ class Scraper:
 
                     flag = get_core_data(i, ids)
                     if not flag:
-                        print("Skipping this entire data point.")
+                        print("Skipping this entire data point.\n")
                         ids.append("\nNULL\n" + "UID:\n" + str(i))
                         simple_refresh(i)
                         continue
