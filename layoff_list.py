@@ -1,5 +1,5 @@
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, \
-    StaleElementReferenceException, ElementNotInteractableException
+    StaleElementReferenceException, ElementNotInteractableException, MoveTargetOutOfBoundsException
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
@@ -15,14 +15,14 @@ class Scraper:
 
     def __init__(self):
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
         self.url = "https://list.layoffs.fyi/?Prior%20Department=Engineering"
 
     def begin(self, data_file):
 
-        csv_columns = ['user_id', 'Name', 'email', 'department', 'job_title', 'company', 'skills', 'linkedIn', 'location']
-
+        csv_columns = ['user_id', 'Name', 'email', 'department', 'job_title', 'company', 'skills', 'linkedIn',
+                       'location']
 
         self.driver.implicitly_wait(60)
         self.driver.get(self.url)
@@ -84,22 +84,27 @@ class Scraper:
 
         def simple_refresh(n):
             self.driver.refresh()
-            time.sleep(5)
+            time.sleep(6)
             scroll(n)
-            time.sleep(1)
+            time.sleep(4)
 
-        def click_screen(position):
+        def click_screen(position, n):
             time.sleep(3)
             action = webdriver.common.action_chains.ActionChains(self.driver)
             action.move_to_element_with_offset(position, 20, 20)
             action.click()
-            action.perform()
+            try:
+                action.perform()
+            except MoveTargetOutOfBoundsException:
+                simple_refresh(n)
+                action.perform()
+
             time.sleep(1)
 
         def scroll(n):
-            self.driver.execute_script("window.scrollTo({top:" + str(n * 200) + ",behavior: 'smooth',});")
-            return n * 200
-            time.sleep(3)
+            self.driver.execute_script("window.scrollTo({top:" + str(n * 180) + ",behavior: 'smooth',});")
+            time.sleep(2)
+            return n * 180
 
         # todo probably dont need this anymore
         def check_mail_or_linked(variable, n):
@@ -116,11 +121,12 @@ class Scraper:
                 return False
 
         def get_core_data(n, id_list):
+            """Returns true and appends core text to id[n] string if core data text exists, false if not."""
             # todo Relocation preference
             try:
 
                 click_screen(self.driver.find_elements_by_xpath("//*[@id='app']/div/div/div/div[4]"
-                                                                "/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0])
+                                                                "/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0], n)
 
                 data = self.driver.find_elements_by_xpath(
                     "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div[" + str(n + 1) + "]")[0].text
@@ -136,19 +142,24 @@ class Scraper:
                 return False
 
         def get_linkedIn(n):
+            """Gets linkedIn URL"""
             try:
+                time.sleep(1)
                 linkedIn = self.driver.find_elements_by_xpath(
                     "// *[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div["
                     + str(n + 1) + "]/div/div/div/div/div/div[2]/div[2]/div/div/div[1]/a")
 
-                check_mail_or_linked(linkedIn, n)
+                if "linked" in linkedIn[0].get_attribute('href'):
+                    ids[n] = ids[n] + "\nLINKEDIN\n" + linkedIn[0].get_attribute('href')
+                    return True
 
             except (NoSuchElementException, IndexError) as e:
                 ids[i] = ids[i] + "\nLINKEDIN: \nNULL"
+                return False
 
-        def open_mail(n, the_list):
+        def open_mail(n, the_list, recursion=0):
+            """Clicks mail link; returns true if opened false if not. Retries once if fail first time"""
             try:
-                time.sleep(1)
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
                                                                 "2]/div/div[" + str(n + 1) +
                                                                 "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
@@ -165,19 +176,25 @@ class Scraper:
                     ElementClickInterceptedException) as e:
 
                 print("Trying to open mail again... " + str(e))
-                scroll(n + 1)
+                simple_refresh(n)
                 time.sleep(1)
-                click_screen(mail_button)
-                mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
-                                                                "2]/div/div[" + str(n + 1) +
-                                                                "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
-                                                                "2]/button")
-                try:
-                    time.sleep(3)
-                    mail_button.click()
-                except Exception as e:
+                recursion += 1
+                if recursion == 1:
                     print("error cant get mail " + str(e))
                     return False
+                else:
+                    open_mail(n, the_list, flag)
+                # # mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
+                # #                                                 "2]/div/div[" + str(n + 1) +
+                # #                                                 "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
+                # #                                                 "2]/button")
+                # # try:
+                # #     time.sleep(3)
+                # #     mail_button.click()
+                # #     return True
+                # except Exception as e:
+                #     print("error cant get mail " + str(e))
+                #     return False
 
         def copy_email_address(n, the_list):
             try:
@@ -189,6 +206,7 @@ class Scraper:
                 else:
                     return False
             except (NoSuchElementException, IndexError):
+                print("Skipping this email data point.")
                 the_list[n] = the_list[n] + "\nEMAIL: \nNULL"
                 return True
 
@@ -208,9 +226,9 @@ class Scraper:
             while page_position < len_page:
                 for i in range(100000):
                     page_position = scroll(i)
-                    time.sleep(1)
 
-                    if not get_core_data(i, ids):
+                    flag = get_core_data(i, ids)
+                    if not flag:
                         print("Skipping this entire data point.")
                         ids.append("\nNULL\n" + "UID:\n" + str(i))
                         simple_refresh(i)
