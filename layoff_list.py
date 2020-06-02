@@ -13,11 +13,11 @@ import re
 # todo get rid of unnecessary mem wasting id_list, data writes on every iteration
 class Scraper:
 
-    def __init__(self):
+    def __init__(self, url):
         chrome_options = Options()
-        # chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
-        self.url = "https://list.layoffs.fyi/?Location=San%20Francisco%7CSF%20Bay%20Area&Prior%20Department=Operations"
+        self.url = "https://list.layoffs.fyi/?Location=San%20Francisco%7CSF%20Bay%20Area&Prior%20Department=Engineering"
 
     def begin(self, data_file):
 
@@ -26,11 +26,13 @@ class Scraper:
 
         self.driver.implicitly_wait(60)
         self.driver.get(self.url)
+        time.sleep(3)
         len_page = self.driver.execute_script("return document.body.scrollHeight;")
         ids = []
         final_list = dict()
 
         def process_string(input_string):
+            """Process text output of webpage"""
 
             final_list["Name"] = input_string[0]
 
@@ -82,13 +84,8 @@ class Scraper:
 
             return final_list
 
-        def simple_refresh(n):
-            self.driver.refresh()
-            time.sleep(6)
-            scroll(n)
-            time.sleep(8)
-
         def click_screen(position, n):
+            """clicks screen at irellevant position in case mail popup still open"""
             time.sleep(4)
             action = webdriver.common.action_chains.ActionChains(self.driver)
             action.move_to_element_with_offset(position, 20, 20)
@@ -96,7 +93,8 @@ class Scraper:
             try:
                 action.perform()
             except MoveTargetOutOfBoundsException:
-                simple_refresh(n)
+                scroll(n - 1)
+                scroll(n + 1)
                 action.perform()
 
             time.sleep(1)
@@ -120,6 +118,7 @@ class Scraper:
             except IndexError:
                 return False
 
+        @timer
         def get_core_data(n, id_list):
             """Returns true and appends core text to id[n] string if core data text exists, false if not."""
             # todo Relocation preference
@@ -141,6 +140,7 @@ class Scraper:
             except IndexError:
                 return False
 
+        @timer
         def get_linkedIn(n):
             """Gets linkedIn URL"""
             try:
@@ -154,6 +154,8 @@ class Scraper:
                     return True
 
             except (NoSuchElementException, IndexError) as e:
+                scroll(n)
+                print("no linkedIn...")
                 ids[i] = ids[i] + "\nLINKEDIN: \nNULL"
                 return False
 
@@ -162,11 +164,22 @@ class Scraper:
             # todo if mail_button has clipboard, return false; speed increase of 30x
             try:
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
-                                                                "2]/div/div[" + str(n + 1) +
-                                                                "]/div/div/div/div/div/div[""2]/div[2]/div/div/div["
-                                                                "2]/button")
+                                                                "2]/div/div[" + str(n + 1) +"]/div/div/div/div/div/div["
+                                                                "2]/div[2]/div/div/div[""2]/button")
                 if 'Share' in mail_button.text:
-                    return False
+                    try:
+                        mail_button = self.driver.find_elements_by_xpath(
+                            "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div["+str(n+1)+"]/div/div/div/div/"
+                            "div/div[2]/div[2]/div/div/div[1]/button")
+                        mail_button[0].click()
+                        if not copy_email_address(n, the_list):
+                            return False
+                        else:
+                            return True
+                    except (ElementNotInteractableException, StaleElementReferenceException, NoSuchElementException,
+                            ElementClickInterceptedException) as e:
+                        print("no mail...")
+                        return False
 
                 time.sleep(1)
                 mail_button.click()
@@ -180,8 +193,6 @@ class Scraper:
                     ElementClickInterceptedException) as e:
 
                 print("Trying to open mail again... " + str(e))
-                # todo assess redundancy
-                # simple_refresh(n)
                 time.sleep(1)
                 recursion += 1
                 if recursion == 1:
@@ -203,8 +214,7 @@ class Scraper:
                     return False
             except (NoSuchElementException, IndexError):
                 print("Skipping this email data point.")
-                the_list[n] = the_list[n] + "\nEMAIL: \nNULL"
-                return True
+                return False
 
         @timer
         def get_mail(n, the_list):
@@ -227,9 +237,11 @@ class Scraper:
                     if not flag:
                         print("Skipping this entire data point.\n")
                         ids.append("\nNULL\n" + "UID:\n" + str(i))
-                        simple_refresh(i)
+                        scroll(i)
+                        time.sleep(2)
                         continue
 
+                    # todo assess redundancy
                     get_linkedIn(i)
 
                     if not get_mail(i, ids):
@@ -241,6 +253,6 @@ class Scraper:
 
                     print("COUNT: " + str(i + 1) + "\n" + str(final_list) + "\n")
 
-                    scroll(i)
+                    # scroll(i)
 
         self.driver.close()
