@@ -3,3 +3,5 @@ layoff_list.csv
 .DS_Store
 .idea/
 __pycache__/
+*.csv
+*.txt

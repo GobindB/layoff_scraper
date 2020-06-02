@@ -15,9 +15,9 @@ class Scraper:
 
     def __init__(self, url):
         chrome_options = Options()
-        # chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
-        self.url = "https://list.layoffs.fyi/?Location=San%20Francisco%7CSF%20Bay%20Area&Prior%20Department=Product"
+        self.url = "https://list.layoffs.fyi/?Location=SF%20Bay%20Area%7CSan%20Francisco"
 
     def begin(self, data_file):
 
@@ -162,16 +162,20 @@ class Scraper:
             """Clicks mail link; returns true if opened false if not. Retries once if fail first time"""
             try:
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
-                                                                "2]/div/div[" + str(n + 1) +"]/div/div/div/div/div/div["
-                                                                "2]/div[2]/div/div/div[""2]/button")
+                                                                "2]/div/div[" + str(
+                    n + 1) + "]/div/div/div/div/div/div["
+                             "2]/div[2]/div/div/div[""2]/button")
                 time.sleep(1)
-                mail_button.click()
 
-                if 'Share' in mail_button.text:
+                if 'Similar' in mail_button.text:
+                    return False
+
+                elif 'Share' in mail_button.text:
                     try:
                         mail_button = self.driver.find_elements_by_xpath(
-                            "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div["+str(n+1)+"]/div/div/div/div/"
-                            "div/div[2]/div[2]/div/div/div[1]/button")
+                            "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div[" + str(
+                                n + 1) + "]/div/div/div/div/"
+                                         "div/div[2]/div[2]/div/div/div[1]/button")
                         mail_button[0].click()
 
                         if not copy_email_address(n, the_list):
@@ -184,13 +188,14 @@ class Scraper:
                         print("no mail...")
                         return False
 
+                mail_button.click()
+
                 if not copy_email_address(n, the_list):
                     return False
                 else:
                     return True
 
-            except (ElementNotInteractableException, StaleElementReferenceException, NoSuchElementException,
-                    ElementClickInterceptedException) as e:
+            except (StaleElementReferenceException, NoSuchElementException) as e:
 
                 print("Trying to open mail again... " + str(e))
                 time.sleep(1)
@@ -200,8 +205,15 @@ class Scraper:
                     return False
                 else:
                     scroll(n)
-                    open_mail(n, the_list, flag)
+                    open_mail(n, the_list, recursion)
                     return True
+            except (ElementNotInteractableException, ElementClickInterceptedException):
+                self.driver.refresh()
+                time.sleep(6)
+                scroll(n)
+                time.sleep(2)
+                open_mail(n, the_list, recursion)
+                return True
 
         def copy_email_address(n, the_list):
             try:
