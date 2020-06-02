@@ -15,9 +15,9 @@ class Scraper:
 
     def __init__(self, url):
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
-        self.url = "https://list.layoffs.fyi/?Location=San%20Francisco%7CSF%20Bay%20Area&Prior%20Department=Engineering"
+        self.url = "https://list.layoffs.fyi/?Location=San%20Francisco%7CSF%20Bay%20Area&Prior%20Department=Product"
 
     def begin(self, data_file):
 
@@ -154,35 +154,35 @@ class Scraper:
                     return True
 
             except (NoSuchElementException, IndexError) as e:
-                scroll(n)
                 print("no linkedIn...")
                 ids[i] = ids[i] + "\nLINKEDIN: \nNULL"
                 return False
 
         def open_mail(n, the_list, recursion=0):
             """Clicks mail link; returns true if opened false if not. Retries once if fail first time"""
-            # todo if mail_button has clipboard, return false; speed increase of 30x
             try:
                 mail_button = self.driver.find_element_by_xpath("//*[@id='app']/div/div/div/div[4]/div/div[2]/div["
                                                                 "2]/div/div[" + str(n + 1) +"]/div/div/div/div/div/div["
                                                                 "2]/div[2]/div/div/div[""2]/button")
+                time.sleep(1)
+                mail_button.click()
+
                 if 'Share' in mail_button.text:
                     try:
                         mail_button = self.driver.find_elements_by_xpath(
                             "//*[@id='app']/div/div/div/div[4]/div/div[2]/div[2]/div/div["+str(n+1)+"]/div/div/div/div/"
                             "div/div[2]/div[2]/div/div/div[1]/button")
                         mail_button[0].click()
+
                         if not copy_email_address(n, the_list):
                             return False
                         else:
                             return True
+
                     except (ElementNotInteractableException, StaleElementReferenceException, NoSuchElementException,
-                            ElementClickInterceptedException) as e:
+                            ElementClickInterceptedException, IndexError) as e:
                         print("no mail...")
                         return False
-
-                time.sleep(1)
-                mail_button.click()
 
                 if not copy_email_address(n, the_list):
                     return False
@@ -208,10 +208,12 @@ class Scraper:
                 time.sleep(3)
                 email = self.driver.find_element_by_class_name('modal-body')
                 email = email.text
+
                 if check_mail_or_linked(email, n):
                     return True
                 else:
                     return False
+
             except (NoSuchElementException, IndexError):
                 print("Skipping this email data point.")
                 return False
@@ -252,7 +254,5 @@ class Scraper:
                     writer.writerow(final_list)
 
                     print("COUNT: " + str(i + 1) + "\n" + str(final_list) + "\n")
-
-                    # scroll(i)
 
         self.driver.close()
