@@ -1,7 +1,7 @@
 # layoff_scraper
 Aggregate and process layoff data from website into a structured dataset
 
-To run from command line:
+To run from command line install neccesarys requirements:
 
 call scraper.py script with args
 a) output text name
